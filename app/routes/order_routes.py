@@ -108,3 +108,34 @@ def process_order(
     db.commit()
     db.refresh(order)
     return order
+
+
+# --- ADDITIONAL CUSTOMER PROFILE ENDPOINTS ---
+
+@router.get("/history", response_model=List[schemas.OrderResponse])
+def get_user_order_history(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Allows a customer to view their entire historical checkout timeline, 
+    sorted from newest to oldest checkout requests.
+    """
+    return db.query(models.Order).filter(
+        models.Order.user_id == current_user.id
+    ).order_by(models.Order.created_at.desc()).all()
+
+
+@router.get("/history/approved", response_model=List[schemas.OrderResponse])
+def get_user_approved_orders(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Allows a customer to see only the items that the shopkeeper has ACCEPTED 
+    and committed to their schedule delivery timeline.
+    """
+    return db.query(models.Order).filter(
+        models.Order.user_id == current_user.id,
+        models.Order.status == "ACCEPTED"
+    ).order_by(models.Order.created_at.desc()).all()
