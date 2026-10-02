@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
@@ -109,33 +109,41 @@ def process_order(
     db.refresh(order)
     return order
 
-
-# --- ADDITIONAL CUSTOMER PROFILE ENDPOINTS ---
+# --- PAGINATED CUSTOMER HISTORY ENDPOINTS ---
 
 @router.get("/history", response_model=List[schemas.OrderResponse])
 def get_user_order_history(
+    limit: int = Query(default=10, le=100, ge=1, description="Number of orders to return per page"),
+    offset: int = Query(default=0, ge=0, description="Number of historical orders to skip"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     """
-    Allows a customer to view their entire historical checkout timeline, 
-    sorted from newest to oldest checkout requests.
+    Retrieves a paginated list of the customer's entire order history,
+    ordered sequentially from the newest request downward.
     """
-    return db.query(models.Order).filter(
-        models.Order.user_id == current_user.id
-    ).order_by(models.Order.created_at.desc()).all()
+    return db.query(models.Order)\
+             .filter(models.Order.user_id == current_user.id)\
+             .order_by(models.Order.created_at.desc())\
+             .limit(limit)\
+             .offset(offset)\
+             .all()
 
 
 @router.get("/history/approved", response_model=List[schemas.OrderResponse])
 def get_user_approved_orders(
+    limit: int = Query(default=10, le=100, ge=1, description="Number of orders to return per page"),
+    offset: int = Query(default=0, ge=0, description="Number of historical orders to skip"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     """
-    Allows a customer to see only the items that the shopkeeper has ACCEPTED 
-    and committed to their schedule delivery timeline.
+    Retrieves a paginated list of approved orders only (status = ACCEPTED),
+    enabling swift access to active logistics details.
     """
-    return db.query(models.Order).filter(
-        models.Order.user_id == current_user.id,
-        models.Order.status == "ACCEPTED"
-    ).order_by(models.Order.created_at.desc()).all()
+    return db.query(models.Order)\
+             .filter(models.Order.user_id == current_user.id, models.Order.status == "ACCEPTED")\
+             .order_by(models.Order.created_at.desc())\
+             .limit(limit)\
+             .offset(offset)\
+             .all()
