@@ -1,76 +1,86 @@
+# app/models.py
 import datetime
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum
-from sqlalchemy.orm import relationship
-from app.database import Base
+from typing import List
+from sqlalchemy import String, Float, ForeignKey, DateTime
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+class Base(DeclarativeBase):
+    pass
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    role = Column(String, default="customer") # "customer" or "shopkeeper"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, default="customer") # "customer" or "shopkeeper"
 
     # Relationships
-    cart_items = relationship("CartItem", back_populates="user", cascade="all, delete-orphan")
-    orders = relationship("Order", back_populates="user")
+    cart_items: Mapped[List["CartItem"]] = relationship(
+        "CartItem", back_populates="user", cascade="all, delete-orphan"
+    )
+    orders: Mapped[List["Order"]] = relationship("Order", back_populates="user")
 
 
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
-    price = Column(Float, nullable=False)
-    stock_quantity = Column(Integer, default=0)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
+    stock_quantity: Mapped[int] = mapped_column(default=0)
 
     # Relationships
-    cart_items = relationship("CartItem", back_populates="product")
-    order_items = relationship("OrderItem", back_populates="product")
+    cart_items: Mapped[List["CartItem"]] = relationship("CartItem", back_populates="product")
+    order_items: Mapped[List["OrderItem"]] = relationship("OrderItem", back_populates="product")
 
 
 class CartItem(Base):
     __tablename__ = "cart_items"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Integer, default=1)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(default=1)
 
     # Relationships
-    user = relationship("User", back_populates="cart_items")
-    product = relationship("Product", back_populates="cart_items")
+    user: Mapped["User"] = relationship("User", back_populates="cart_items")
+    product: Mapped["Product"] = relationship("Product", back_populates="cart_items")
 
 
 class Order(Base):
     __tablename__ = "orders"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    delivery_location = Column(String, nullable=False)
-    delivery_date = Column(String, nullable=False) # Can also use Date type
-    payment_method = Column(String, nullable=False) # "SITE" or "BANK_WALLET"
-    total_amount = Column(Float, nullable=False)
-    status = Column(String, default="PENDING") # "PENDING", "ACCEPTED", "REJECTED"
-    created_at = Column(
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    delivery_location: Mapped[str] = mapped_column(String, nullable=False)
+    delivery_date: Mapped[str] = mapped_column(String, nullable=False)
+    payment_method: Mapped[str] = mapped_column(String, nullable=False) # "SITE" or "BANK_WALLET"
+    total_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String, default="PENDING") # "PENDING", "ACCEPTED", "REJECTED"
+    
+    # Timezone-aware UTC timestamp mapping
+    created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, 
         default=lambda: datetime.datetime.now(datetime.timezone.utc)
     )
 
     # Relationships
-    user = relationship("User", back_populates="orders")
-    order_items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    user: Mapped["User"] = relationship("User", back_populates="orders")
+    order_items: Mapped[List["OrderItem"]] = relationship(
+        "OrderItem", back_populates="order", cascade="all, delete-orphan"
+    )
 
 
 class OrderItem(Base):
     __tablename__ = "order_items"
 
-    id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    quantity = Column(Integer, nullable=False)
-    price_at_purchase = Column(Float, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(nullable=False)
+    price_at_purchase: Mapped[float] = mapped_column(Float, nullable=False)
 
     # Relationships
-    order = relationship("Order", back_populates="order_items")
-    product = relationship("Product", back_populates="order_items")
+    order: Mapped["Order"] = relationship("Order", back_populates="order_items")
+    product: Mapped["Product"] = relationship("Product", back_populates="order_items")
