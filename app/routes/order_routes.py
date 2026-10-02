@@ -118,13 +118,10 @@ def get_user_order_history(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """
-    Retrieves a paginated list of the customer's entire order history,
-    ordered sequentially from the newest request downward.
-    """
+    # Added .desc() on id as a deterministic fallback tie-breaker
     return db.query(models.Order)\
              .filter(models.Order.user_id == current_user.id)\
-             .order_by(models.Order.created_at.desc())\
+             .order_by(models.Order.created_at.desc(), models.Order.id.desc())\
              .limit(limit)\
              .offset(offset)\
              .all()
@@ -137,13 +134,10 @@ def get_user_approved_orders(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """
-    Retrieves a paginated list of approved orders only (status = ACCEPTED),
-    enabling swift access to active logistics details.
-    """
+    # Added .desc() on id as a deterministic fallback tie-breaker
     return db.query(models.Order)\
              .filter(models.Order.user_id == current_user.id, models.Order.status == "ACCEPTED")\
-             .order_by(models.Order.created_at.desc())\
+             .order_by(models.Order.created_at.desc(), models.Order.id.desc())\
              .limit(limit)\
              .offset(offset)\
              .all()
