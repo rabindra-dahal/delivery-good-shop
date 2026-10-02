@@ -52,7 +52,10 @@ class Order(Base):
     payment_method = Column(String, nullable=False) # "SITE" or "BANK_WALLET"
     total_amount = Column(Float, nullable=False)
     status = Column(String, default="PENDING") # "PENDING", "ACCEPTED", "REJECTED"
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(
+        DateTime, 
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
 
     # Relationships
     user = relationship("User", back_populates="orders")
