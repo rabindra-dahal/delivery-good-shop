@@ -1,7 +1,8 @@
 # app/database.py
 from sqlalchemy import create_engine
 # Change this import:
-from sqlalchemy.orm import sessionmaker, declarative_base 
+from sqlalchemy.orm import sessionmaker 
+from app.models import Base
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./shop.db"
 
@@ -10,8 +11,6 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Use the updated standard initialization
-Base = declarative_base() 
 
 def get_db():
     db = SessionLocal()
